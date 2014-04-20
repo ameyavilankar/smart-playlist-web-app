@@ -1,0 +1,57 @@
+[
+   {
+      "OwnerID":"100000492412441",
+      "EventName":"MAS Hackathon",
+      "Loc":{
+         "Latitude":"33.774131",
+         "Longitude":"-84.398842"
+      },
+      "EventDesc":"Code up tha shit!!",
+      "EventVenue":"Student Center Ballroom",
+      "_id":"53220dd38a92704941c8616c"
+   },
+   {
+      "OwnerID":"100000492412441",
+      "EventName":"Holi Party",
+      "Loc":{
+         "Latitude":"33.774872",
+         "Longitude":"-84.397157"
+      },
+      "EventDesc":"Festival of Colors.",
+      "EventVenue":"Tech Green",
+      "_id":"53220e388a9270113ec8616c"
+   },
+   {
+      "OwnerID":"100000492412441",
+      "EventName":"Grad Picnic",
+      "Loc":{
+         "Latitude":"33.776845",
+         "Longitude":"-84.396572"
+      },
+      "EventDesc":"Enjoy the Grad Picnic.",
+      "EventVenue":"Klaus",
+      "_id":"5322a2a98a9270583ac8616e"
+   },
+   {
+      "OwnerID":"100000492412441",
+      "EventName":"Christmas Party",
+      "Loc":{
+         "Latitude":"123",
+         "Longitude":"111"
+      },
+      "EventDesc":"Gatech",
+      "EventVenue":"Student Center",
+      "_id":"5322a9ac8a92700745c8616e"
+   },
+   {
+      "OwnerID":"100000492412441",
+      "EventName":"ThanksGiving Party",
+      "Loc":{
+         "Latitude":"33.776961",
+         "Longitude":"-84.389169"
+      },
+      "EventDesc":"Happy Thanksgiving",
+      "EventVenue":"The Spence",
+      "_id":"5323204c8a92706041c8616d"
+   }
+]

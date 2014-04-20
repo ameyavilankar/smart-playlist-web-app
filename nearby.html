@@ -1,0 +1,441 @@
+<!DOCTYPE HTML>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="images/splash/splash-icon.png">
+<link rel="apple-touch-startup-image" href="images/splash/splash-screen.png"
+      media="screen and (max-device-width: 320px)"/>
+<link rel="apple-touch-startup-image" href="images/splash/splash-screen%402x.png"
+      media="(max-device-width: 480px) and (-webkit-min-device-pixel-ratio: 2)"/>
+<link rel="apple-touch-startup-image" sizes="640x1096" href="images/splash/splash-screen%403x.png"/>
+<link rel="apple-touch-startup-image" sizes="1024x748" href="images/splash/splash-screen-ipad-landscape.html"
+      media="screen and (min-device-width : 481px) and (max-device-width : 1024px) and (orientation : landscape)"/>
+<link rel="apple-touch-startup-image" sizes="768x1004" href="images/splash/splash-screen-ipad-portrait.png"
+      media="screen and (min-device-width : 481px) and (max-device-width : 1024px) and (orientation : portrait)"/>
+<link rel="apple-touch-startup-image" sizes="1536x2008" href="images/splash/splash-screen-ipad-portrait-retina.png"
+      media="(device-width: 768px)	and (orientation: portrait)	and (-webkit-device-pixel-ratio: 2)"/>
+<link rel="apple-touch-startup-image" sizes="1496x2048" href="images/splash/splash-screen-ipad-landscape-retina.png"
+      media="(device-width: 768px)	and (orientation: landscape)	and (-webkit-device-pixel-ratio: 2)"/>
+
+<title>Nearby Events</title>
+
+<link href="styles/style.css" rel="stylesheet" type="text/css">
+<link href="styles/framework.css" rel="stylesheet" type="text/css">
+<link href="styles/owl.carousel.css" rel="stylesheet" type="text/css">
+<link href="styles/owl.theme.css" rel="stylesheet" type="text/css">
+<link href="styles/swipebox.css" rel="stylesheet" type="text/css">
+<link href="styles/colorbox.css" rel="stylesheet" type="text/css">
+
+<script type="text/javascript" src="scripts/jquery.js"></script>
+<script type="text/javascript" src="scripts/jqueryui.js"></script>
+<script type="text/javascript" src="scripts/owl.carousel.min.js"></script>
+<script type="text/javascript" src="scripts/jquery.swipebox.js"></script>
+<script type="text/javascript" src="scripts/colorbox.js"></script>
+<script type="text/javascript" src="scripts/snap.js"></script>
+<script type="text/javascript" src="scripts/contact.js"></script>
+<script type="text/javascript" src="scripts/custom.js"></script>
+<script type="text/javascript" src="scripts/framework.js"></script>
+<script type="text/javascript" src="scripts/framework.launcher.js"></script>
+
+<style>
+    html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+    }
+    .controls {
+        margin-top: 16px;
+        border: 1px solid transparent;
+        border-radius: 2px 0 0 2px;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        height: 32px;
+        outline: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    #pac-input {
+        background-color: #fff;
+        padding: 0 11px 0 13px;
+        width: 400px;
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 300;
+        text-overflow: ellipsis;
+    }
+
+    #pac-input:focus {
+        border-color: #4d90fe;
+        margin-left: -1px;
+        padding-left: 14px;  /* Regular padding-left + 1. */
+        width: 401px;
+    }
+
+    .pac-container {
+        font-family: Roboto;
+    }
+
+    #type-selector {
+        color: #fff;
+        background-color: #4d90fe;
+        padding: 5px 11px 0px 11px;
+    }
+
+    #type-selector label {
+        font-family: Roboto;
+        font-size: 13px;
+        font-weight: 300;
+    }
+
+</style>
+
+
+<!--
+Include the maps javascript with sensor=true because this code is using a
+sensor (a GPS locator) to determine the user's location.
+See: https://developers.google.com/maps/documentation/javascript/tutorial#Loading_the_Maps_API
+-->
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true&libraries=places"></script>
+<script>
+    // Note: This example requires that you consent to location sharing when
+    // prompted by your browser. If you see a blank space instead of the map, this
+    // is probably because you have denied permission for location sharing.
+
+    var map;
+    var currentLocationMarker;
+    var infoWindow = new google.maps.InfoWindow({
+        content:"Current Location"
+    });
+    var nearbyLocations = [];
+    var eventMarkers = [];
+    var iterator = 0;
+    var restURL = "http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event?FacebookID=";
+    var mapData;
+
+    function initialize() {
+
+        // To hold all the markers
+        var markers = [];
+
+        // Options for the googel map
+        var mapOptions = {
+            zoom: 18,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            panControl:true,
+            zoomControl:true,
+            mapTypeControl:true,
+            scaleControl:true,
+            streetViewControl:true,
+            overviewMapControl:true,
+            rotateControl:true
+        };
+
+        // Create the map and assign it to a div
+        map = new google.maps.Map(document.getElementById('map-canvas'),
+                mapOptions);
+
+            var defaultBounds = new google.maps.LatLngBounds(
+                    new google.maps.LatLng(-33.8902, 151.1759),
+                    new google.maps.LatLng(-33.8474, 151.2631));
+            map.fitBounds(defaultBounds);
+
+        // Create the search box and link it to the UI element.
+        var input = /** @type {HTMLInputElement} */(
+                document.getElementById('pac-input'));
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+        var searchBox = new google.maps.places.SearchBox(
+                /** @type {HTMLInputElement} */(input));
+
+        // [START region_getplaces]
+        // Listen for the event fired when the user selects an item from the
+        // pick list. Retrieve the matching places for that item.
+        google.maps.event.addListener(searchBox, 'places_changed', function() {
+            var places = searchBox.getPlaces();
+
+            for (var i = 0, marker; marker = markers[i]; i++) {
+                marker.setMap(null);
+            }
+
+            // For each place, get the icon, place name, and location.
+            markers = [];
+            var bounds = new google.maps.LatLngBounds();
+            for (var i = 0, place; place = places[i]; i++) {
+                var image = {
+                    url: place.icon,
+                    size: new google.maps.Size(71, 71),
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(17, 34),
+                    scaledSize: new google.maps.Size(25, 25)
+                };
+
+                // Create a marker for each place.
+                var marker = new google.maps.Marker({
+                    map: map,
+                    icon: image,
+                    title: place.name,
+                    position: place.geometry.location
+                });
+
+                markers.push(marker);
+
+                bounds.extend(place.geometry.location);
+            }
+
+            map.fitBounds(bounds);
+        });
+        // [END region_getplaces]
+
+        // Bias the SearchBox results towards places that are within the bounds of the
+        // current map's viewport.
+        google.maps.event.addListener(map, 'bounds_changed', function() {
+            var bounds = map.getBounds();
+            searchBox.setBounds(bounds);
+        });
+
+        // Try HTML5 geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var pos = new google.maps.LatLng(position.coords.latitude,
+                        position.coords.longitude);
+
+                // Add a marker to the current Location
+                currentLocationMarker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    draggable: false,
+                    animation: google.maps.Animation.DROP,
+                    title: "Current Location"
+                });
+
+                // Set the center of the map to the current location
+                map.setCenter(pos);
+
+                // Add an event listener to the marker to zoom to it
+                google.maps.event.addListener(currentLocationMarker, 'click', function() {
+                    map.setZoom(18);
+                    map.setCenter(currentLocationMarker.getPosition());
+                    infoWindow.open(map, currentLocationMarker);
+                });
+
+            }, function () {
+                handleNoGeolocation(true);
+            });
+        } else {
+            // Browser doesn't support Geolocation
+            handleNoGeolocation(false);
+        }
+    }
+
+    function handleNoGeolocation(errorFlag) {
+        if (errorFlag) {
+            var content = 'Error: The Geolocation service failed.';
+        } else {
+            var content = 'Error: Your browser doesn\'t support geolocation.';
+        }
+
+        var options = {
+            map: map,
+            position: new google.maps.LatLng(60, 105),
+            content: content
+        };
+
+        var infowindow = new google.maps.InfoWindow(options);
+        map.setCenter(options.position);
+    }
+
+    function drop() {
+
+        $.ajax({
+            url: "http://query.yahooapis.com/v1/public/yql",
+
+            // the name of the callback parameter, as specified by the YQL service
+            jsonp: "callback",
+
+            // tell jQuery we're expecting JSONP
+            dataType: "jsonp",
+
+            // tell YQL what we want and that we want JSON
+            data: {
+                q: "select * from json where url=\"http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event?FacebookID=100000492412441\"",
+                format: "json"
+            },
+
+            // work with the response
+            success: function(json) {
+
+                console.log("Inside Success");
+                mapData = json.query.results.json.json;
+
+                for (var key in mapData)
+                {
+                    if (mapData.hasOwnProperty(key))
+                    {
+                        nearbyLocations.push(new google.maps.LatLng(parseFloat(mapData[key].Loc.Longitude), parseFloat(mapData[key].Loc.Latitude)));
+                    }
+                }
+
+                console.log(JSON.stringify(nearbyLocations));
+
+                for (var i = 0; i < nearbyLocations.length; i++) {
+                    setTimeout(function() {
+                        addMarker();
+                    }, i * 200);
+                }
+            }
+        });
+    }
+
+    function addMarker() {
+        eventMarkers.push(new google.maps.Marker({
+            position: nearbyLocations[iterator],
+            map: map,
+            draggable: false,
+            animation: google.maps.Animation.DROP,
+            title: mapData[iterator].EventName + mapData[iterator].EventDesc + mapData[iterator].EventVenue
+        }));
+
+        iterator++;
+    }
+
+    google.maps.event.addDomListener(window, 'load', initialize);
+
+</script>
+
+<script>
+
+    //When DOM loaded we attach click event to button
+    $(document).ready(function() {
+        drop();
+    });
+</script>
+
+</head>
+<body>
+
+<div id="preloader">
+    <div id="status">
+        <p class="center-text">
+            Loading the content...
+            <em>Loading depends on your connection speed!</em>
+        </p>
+    </div>
+</div>
+
+<div id="fb-root"></div>
+<script>
+    window.fbAsyncInit = function () {
+        FB.init({
+            appId: '646533915411234',
+            status: true,
+            xfbml: true
+        });
+
+        // TOD0: Add FB.ui call for feeds
+    };
+
+    (function (d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {
+            return;
+        }
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "//connect.facebook.net/en_US/all.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="header">
+    <a href="#" class="show-navigation"></a>
+    <a href="#" class="hide-navigation"></a>
+    <img src="images/app-logo.png" class="page-logo" alt="img">
+</div>
+
+<div class="navigation">
+    <div class="navigation-wrapper">
+        <div class="nav-item">
+            <a href="index.html" class="homepage-icon">Homepage<em class="unselected-item"></em></a>
+        </div>
+        <div class="nav-item">
+            <a href="nearby.html" class="nearby-icon">Nearby<em class="selected-item"></em></a>
+        </div>
+        <div class="nav-item">
+            <a href= "viewRecommendedPlaylist.html" class="playlist-icon">Playlist<em class="unselected-item"></em></a>
+        </div>
+        <div class="nav-item">
+            <a href="#" class="submenu-item events-icon">EVENTS<em class="dropdown-item"></em></a>
+
+            <div class="submenu">
+                <a href="addevents.html">Add Events <em class="unselected-item"></em></a>
+                <a href="viewevents.html">View Events <em class="unselected-item"></em></a>
+                <a href="#">Delete Events <em class="unselected-item"></em></a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="#" class="profile-icon">My Profile <em class="unselected-item"></em></a>
+        </div>
+
+        <!--<div class="nav-item">-->
+            <!--<a href="#" class="submenu-item portfolio-icon">Portfolio<em class="dropdown-item"></em></a>-->
+
+            <!--<div class="submenu">-->
+                <!--<a href="viewevents.html">Tile Portfolio <em class="unselected-item"></em></a>-->
+                <!--<a href="one-column.html">One Column Portfolio <em class="unselected-item"></em></a>-->
+                <!--<a href="two-column.html">Two Column Portfolio <em class="unselected-item"></em></a>-->
+                <!--<a href="three-column.html">Three Column Portfolio <em class="unselected-item"></em></a>-->
+                <!--<a href="videos.html">Video Items <em class="unselected-item"></em></a>-->
+            <!--</div>-->
+        <!--</div>-->
+
+    </div>
+</div>
+
+<div class="page-header-clear"></div>
+
+<!--<div class="content-section">-->
+<!--<h1 class="left-text">LET'S CONNECT</h1>-->
+<!--<em class="left-text">Send us a message, or give us a call!</em>-->
+
+<!--<div class="overlay"></div>-->
+<!--&lt;!&ndash;<img class="responsive-image" src="images/general-nature/5w.jpg" alt="img">&ndash;&gt;-->
+<!--</div>-->
+
+<!-- <div class="content">
+    <div class="container no-bottom">
+        <p>
+            The Google Maps zooms to your current location when the page first loads. Map shows you the nearby events.
+            You can also look for events along an address by using the search bar.
+        </p>
+    </div>
+    <div class="decoration"></div>
+</div> -->
+
+<!--<div class="maps-container">-->
+<!--<iframe class="responsive-image maps" src="https://maps.google.com/?ie=UTF8&amp;ll=47.595131,-122.330414&amp;spn=0.006186,0.016512&amp;t=h&amp;z=17&amp;output=embed"></iframe>-->
+<!--</div>-->
+<!--<div id="panel">-->
+    <!--<button id="drop" onclick="drop()">Drop Markers</button>-->
+<!--</div>-->
+
+<input id="pac-input" class="controls" type="text" placeholder="Search Box">
+<div id="map-canvas"></div>
+
+
+<div class="content">
+    <div class="decoration"></div>
+    <div id="facebook-center" class="container">
+        <div class="fb-like" data-layout="button_count" data-action="like" data-show-faces="true"
+             data-share="true"></div>
+        <!--<div class="fb-like" data-send="true" data-width="450" data-show-faces="true"></div>-->
+
+        <p class="copyright uppercase center-text no-bottom">Copyright 2013<br> All rights reserved</p>
+    </div>
+</div>
+
+
+</body>
+</html>
