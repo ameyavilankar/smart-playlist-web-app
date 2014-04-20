@@ -159,7 +159,6 @@ ol {
 li {
 	line-height: 18px;
 	margin-bottom:5px;
-	list-style:inside;
 }
 
 ol > li:last-child, ul > li:last-child {

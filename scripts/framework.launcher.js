@@ -18,7 +18,7 @@ $(document).ready(function(){
 		paginationSpeed : 250,
 		rewindSpeed : 250,
 		pagination:false,
-		
+
 		autoPlay : true,
 	});
 	
