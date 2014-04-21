@@ -1,5 +1,4 @@
 <!DOCTYPE HTML>
-<html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0"/>
@@ -21,7 +20,7 @@
     <link rel="apple-touch-startup-image" sizes="1496x2048" href="images/splash/splash-screen-ipad-landscape-retina.png"
           media="(device-width: 768px)	and (orientation: landscape)	and (-webkit-device-pixel-ratio: 2)"/>
 
-    <title>Smart Playlist - View Recommmended Playlist</title>
+    <title>Nearby Events</title>
 
     <link href="styles/style.css" rel="stylesheet" type="text/css">
     <link href="styles/framework.css" rel="stylesheet" type="text/css">
@@ -30,6 +29,7 @@
     <link href="styles/swipebox.css" rel="stylesheet" type="text/css">
     <link href="styles/colorbox.css" rel="stylesheet" type="text/css">
 
+    <script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
     <script type="text/javascript" src="scripts/jquery.js"></script>
     <script type="text/javascript" src="scripts/jqueryui.js"></script>
     <script type="text/javascript" src="scripts/owl.carousel.min.js"></script>
@@ -111,35 +111,22 @@
             left: -.5em;
             border-left-color: #666;
         }
-
-        .spotify-music {
-            /*margin-left: auto;*/
-            /*margin-right: auto;*/
-            width: 300px;
-            height: 380px;
-        }
-
-        .homepage-wrapper {
-            z-index: 100;
-        }
     </style>
 
-    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script type="text/javascript">
         $.getJSON("http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/song?FacebookID=842013816&EventID=533c8fc88a92702e2cdd6495", function (data) {
             var items = [];
             for (var i = 0, len = data.length; i < len; i++) {
-                console.log(data[i]);
                 items.push("<li><a>" + data[i].Name + " : " + data[i].Artist + "</a></li>");
             }
 
+            console.log(items);
             $("#playlist").html(items);
 
         });
     </script>
 
 </head>
-
 <body>
 
 <div id="preloader">
@@ -269,30 +256,30 @@
             frameborder="0" allowtransparency="true"></iframe>
 </div>
 
-<div class="homepage-wrapper">
-
-    <div>
-        <h2>My Songs:</h2>
-        <ol class="rectangle-list" id="playlist">
-            <li><a>abcd</a></li>
-            <li><a>abcd</a></li>
-            <li><a>abcd</a></li>
-        </ol>
-    </div>
-
-    <!--<div class="playlist-show">-->
-    <!--<ul  align="center">-->
-    <!--</ul>-->
-    <!--</div>-->
-
-    <div class="footer">
-        <img class="footer" src="images/CIC.png">
-
-        <div class="clear"></div>
-        <p class="homepage-copyright">TEAM S.A.T.A.N<br>Copyright 2014. <br>All Rights Reserved.</p>
-    </div>
-
+<div>
+    <h2>My Songs:</h2>
+    <ol class="rectangle-list" id="playlist">
+        <li><a>abcd</a></li>
+        <li><a>abcd</a></li>
+        <li><a>abcd</a></li>
+    </ol>
 </div>
+<!--<div class="homepage-wrapper">-->
+<!---->
+<!---->
+
+<!--&lt;!&ndash;<div class="playlist-show">&ndash;&gt;-->
+<!--&lt;!&ndash;<ul  align="center">&ndash;&gt;-->
+<!--&lt;!&ndash;</ul>&ndash;&gt;-->
+<!--&lt;!&ndash;</div>&ndash;&gt;-->
+
+<!--<div class="footer">-->
+<!--<img class="footer" src="images/CIC.png">-->
+
+<!--<div class="clear"></div>-->
+<!--<p class="homepage-copyright">TEAM S.A.T.A.N<br>Copyright 2014. <br>All Rights Reserved.</p>-->
+<!--</div>-->
+
+<!--</div>-->
 </body>
 </html>
-
