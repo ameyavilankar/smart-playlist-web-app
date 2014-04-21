@@ -315,6 +315,32 @@
             // user is now logged out
         });
     }
+
+    function submitForm() { // on document load
+        console.log("Inside Submit Function");
+
+            var data = $('#submit_form').serialize(); // serialize all the data in the form
+
+            console.log("Serialized Data: " + data);
+
+            $.ajax({
+                url: "http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event", // php script to retern json encoded string
+                data: data,  // serialized data to send on server
+                dataType: 'json', // set recieving type - JSON in case of a question
+                type: 'POST', // set sending HTTP Request type
+                async: false,
+                success: function (data) {
+                // callback method for further manipulations
+                console.log("Success. Event Added");
+                alert("Event Added.");
+
+                },
+                error: function (data) { // if error occured
+
+                }
+            });
+            return false;
+    }
 </script>
 
 <div class="header">
@@ -357,7 +383,7 @@
     <!--<em class="homepage-logo-sub">Music Everyone Loves</em>-->
 
     <div class="create-event">
-        <form action="http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event" method="post" class="basic-grey">
+        <form action="http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event" method="post" class="basic-grey" id = "submit_form">
             <h1>Add New Event
                 <span>Please fill all the texts in the fields.</span>
             </h1>
@@ -393,7 +419,7 @@
             <!--Longitude: <input type="num" name="Longitude" id="longText"><br>-->
             <label>
                 <span>&nbsp;</span>
-                <input type="submit" value="Create Event" class="button">
+                    <input type="button" value="Create Event" class="button" onclick="submitForm()">
             </label>
         </form>
     </div>
