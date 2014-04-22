@@ -46,7 +46,6 @@
     ol {
         counter-reset: li;
         list-style: none;
-        *list-style: decimal;
         font: 15px 'trebuchet MS', 'lucida sans';
         padding: 0;
         margin-bottom: 4em;
@@ -62,7 +61,6 @@
         display: block;
         padding: .4em .4em .4em .8em;
         *padding: .4em;
-        margin: .5em 0 .5em 2.5em;
         background: #383838;
         color: #FFFFFF;
         text-decoration: none;
@@ -78,10 +76,6 @@
     }
 
     .rectangle-list a:before {
-        content: counter(li);
-        counter-increment: li;
-        position: absolute;
-        left: -2.5em;
         top: 50%;
         margin-top: -1em;
         background: #383838;
@@ -132,38 +126,34 @@
         text-decoration: none;
     }
 
-    html, body, #map-canvas {
+    html, body {
         height: 100%;
         margin: 0px;
         padding: 0px
     }
+	
+    #map-canvas {
+        height: 80%;
+    }
 
     .controls {
-        margin-top: 16px;
         border: 1px solid transparent;
         border-radius: 2px 0 0 2px;
         box-sizing: border-box;
         -moz-box-sizing: border-box;
-        height: 32px;
+        height: 40px;
+	width:100%;
         outline: none;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     #pac-input {
         background-color: #fff;
-        padding: 0 11px 0 13px;
-        width: 400px;
+	width:100%
         font-family: Roboto;
         font-size: 15px;
         font-weight: 300;
         text-overflow: ellipsis;
-    }
-
-    #pac-input:focus {
-        border-color: #4d90fe;
-        margin-left: -1px;
-        padding-left: 14px; /* Regular padding-left + 1. */
-        width: 401px;
     }
 
     .pac-container {
@@ -182,10 +172,35 @@
         font-weight: 300;
     }
 
-    #infoWindow {
-        /*height: 150px;*/
-        /*width: 150px;*/
+    #infoWindow a {
+	color: black;
+	display:block;
     }
+
+    #infoWindow a:hover {
+	cursor: pointer;
+    }
+
+	.notification {
+		width: 80%;
+		height: 30px;
+		margin-left: 10%;
+		margin-right: 10%;
+		position: absolute;
+		bottom: 20%;
+		overflow: hidden;
+		background: #FFFFC2;
+		z-index: 999;
+		border: 2px solid #FFFFC2;
+		border-radius: 15px;
+	}
+
+	.notification p {
+		vertical-align:middle;
+		text-align:center;
+		font-size: 16px;
+		padding-top:4px;
+	}
 </style>
 
 
@@ -195,6 +210,17 @@ sensor (a GPS locator) to determine the user's location.
 See: https://developers.google.com/maps/documentation/javascript/tutorial#Loading_the_Maps_API
 -->
 <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true&libraries=places"></script>
+<script type="text/javascript" src="FBLogin.js"></script>
+<script>
+    var FBID = "";
+    window.fbAsyncInit = function () {
+	initFacebook(function (uid, accesstoken) {
+		FBID = uid
+		initialize();
+	});
+    };
+</script>
+
 <script>
 // Note: This example requires that you consent to location sharing when
 // prompted by your browser. If you see a blank space instead of the map, this
@@ -209,28 +235,20 @@ function submitForm() { // on document load
     $.ajax({
         url: "http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/sharePlaylistWith", // php script to retern json encoded string
         data: data,  // serialized data to send on server
-        dataType: 'json', // set recieving type - JSON in case of a question
-        type: 'POST', // set sending HTTP Request type
+        type: 'GET', // set sending HTTP Request type
         async: false,
         success: function (data) {
             // callback method for further manipulations
-            console.log("Playlist Shared");
-            alert("Playlist Shared.");
+	    $('#notif').fadeIn(400).delay(3000).fadeOut(400);
+	    infoWindow.close();
         },
         error: function (data) { // if error occured
-
+	    $('#error').fadeIn(400).delay(3000).fadeOut(400);
         }
     });
     return false;
 }
 
-var contentString1 = '<div id = "infoWindow">' +
-                '<form method="post" class = "submit_form">' +
-                '<input type="hidden" name = "FacebookID" value="100000492412441">' +
-                '<input type="hidden" name = "EventID" value="'
-var contentString2 = '">' +
-                '<input type="button" value="Share Playlist" class="sp-button" onclick="submitForm()">' +
-                '</form></div>'
 var map;
 var currentLocationMarker;
 var infoWindow = new google.maps.InfoWindow({
@@ -241,24 +259,62 @@ var eventMarkers = [];
 var iterator = 0;
 var restURL = "http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/event?FacebookID=";
 var mapData;
+var markerBounds;
+var infoWindow;
+var currentLocation;
+
 
 function initialize() {
+    infoWindow = null;
 
     // To hold all the markers
     var markers = [];
 
     // Options for the googel map
     var mapOptions = {
-        zoom: 18,
+        zoom:1,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
-        panControl: true,
-        zoomControl: true,
-        mapTypeControl: true,
-        scaleControl: true,
-        streetViewControl: true,
-        overviewMapControl: true,
-        rotateControl: true
+	disableDefaultUI: true,
     };
+
+    // Try HTML5 geolocation
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+            var pos = new google.maps.LatLng(position.coords.latitude,
+                    position.coords.longitude);
+	    console.log("Currend Position" + pos);
+
+	    var im = 'http://www.robotwoods.com/dev/misc/bluecircle.png';
+            // Add a marker to the current Location
+            currentLocationMarker = new google.maps.Marker({
+                position: pos,
+                map: map,
+                icon: im,
+                draggable: false,
+                title: "Current Location"
+            });
+
+
+            // Add an event listener to the marker to zoom to it
+            google.maps.event.addListener(currentLocationMarker, 'click', function () {
+                map.setCenter(currentLocationMarker.getPosition());
+                infoWindow.open(map, currentLocationMarker);
+            });
+
+            // Set the center of the map to the current location
+            map.setCenter(pos);
+	    currentLocation = pos;
+	    map.setZoom(10);
+    	    markerBounds = new google.maps.LatLngBounds(pos);
+    	    drop();
+
+        }, function () {
+            handleNoGeolocation(true);
+        });
+    } else {
+        // Browser doesn't support Geolocation
+        handleNoGeolocation(false);
+    }
 
     // Create the map and assign it to a div
     map = new google.maps.Map(document.getElementById('map-canvas'),
@@ -272,7 +328,7 @@ function initialize() {
     // Create the search box and link it to the UI element.
     var input = /** @type {HTMLInputElement} */(
             document.getElementById('pac-input'));
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+    map.controls[google.maps.ControlPosition.TOP_CENTER].push(input);
 
     var searchBox = new google.maps.places.SearchBox(
             /** @type {HTMLInputElement} */(input));
@@ -323,38 +379,8 @@ function initialize() {
         searchBox.setBounds(bounds);
     });
 
-    // Try HTML5 geolocation
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-            var pos = new google.maps.LatLng(position.coords.latitude,
-                    position.coords.longitude);
 
-            // Add a marker to the current Location
-            currentLocationMarker = new google.maps.Marker({
-                position: pos,
-                map: map,
-                draggable: false,
-                animation: google.maps.Animation.DROP,
-                title: "Current Location"
-            });
 
-            // Set the center of the map to the current location
-            map.setCenter(pos);
-
-            // Add an event listener to the marker to zoom to it
-            google.maps.event.addListener(currentLocationMarker, 'click', function () {
-                map.setZoom(18);
-                map.setCenter(currentLocationMarker.getPosition());
-                infoWindow.open(map, currentLocationMarker);
-            });
-
-        }, function () {
-            handleNoGeolocation(true);
-        });
-    } else {
-        // Browser doesn't support Geolocation
-        handleNoGeolocation(false);
-    }
 }
 
 function handleNoGeolocation(errorFlag) {
@@ -366,61 +392,67 @@ function handleNoGeolocation(errorFlag) {
 
     var options = {
         map: map,
-        position: new google.maps.LatLng(60, 105),
+        position: new google.maps.LatLng(33.77712,-84.390023),
         content: content
     };
 
     var infowindow = new google.maps.InfoWindow(options);
     map.setCenter(options.position);
+    currentLocation = options.pos;
+    markerBounds = new google.maps.LatLngBounds(options.position);
 }
 
 function drop() {
+    var contentString1 = '<div id = "infoWindow">' +
+                '<form method="post" class = "submit_form">' +
+                '<input type="hidden" name = "FacebookID" value="' + FBID + '">' +
+                '<input type="hidden" name = "eventID" value="'
+    var contentString2 = '">' +
+                '<a onclick="submitForm()">' +
+                '</form></div>'
 
     $.ajax({
-        url: "http://query.yahooapis.com/v1/public/yql",
-
-        // the name of the callback parameter, as specified by the YQL service
-        jsonp: "callback",
-
-        // tell jQuery we're expecting JSONP
-        dataType: "jsonp",
-
-        // tell YQL what we want and that we want JSON
+        url: "http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/eventsnear",
+        dataType: "json",
         data: {
-            q: "select * from json where url=\"http://ec2-54-84-22-77.compute-1.amazonaws.com/epi/1/eventsnear?Longitude=-84.390023&Latitude=33.77712\"",
-            format: "json"
+            Longitude: currentLocation.lng(),
+            Latitude: currentLocation.lat(),
         },
 
         // work with the response
         success: function (json) {
-            mapData = json.query.results.json.json;
-
+	mapData = json;
             var items = []
-            for (var key in mapData) {
-                if (mapData.hasOwnProperty(key)) {
-                    var eventDesc = "Event Name: " + mapData[key].EventName + "<br>Description: " + mapData[key].EventDesc + "<br>Event Venue: " + mapData[key].EventVenue + "<br>";
-                    nearbyLocations.push(new google.maps.LatLng(parseFloat(mapData[key].Loc.Latitude), parseFloat(mapData[key].Loc.Longitude)));
+            for (var e in json) {
+		    event = json[e];
+                    var eventDesc = "Event Name: " + event.EventName + "<br>Description: " + event.EventDesc + "<br>Event Venue: " + event.EventVenue + "<br>";
+                    nearbyLocations.push(new google.maps.LatLng(parseFloat(event.Loc.Latitude), parseFloat(event.Loc.Longitude)));
                     items.push("<li><a>" + eventDesc + "</a></li>");
-                }
             }
 
             $("#event-list").html(items);
 //            console.log(JSON.stringify(nearbyLocations));
 
             for (var i = 0; i < nearbyLocations.length; i++) {
-                setTimeout(function () {
-                    addMarker();
-                }, i * 200);
+            	addMarker(FBID);
             }
+	    map.fitBounds(markerBounds);		
+            google.maps.event.addListener(map,'click', function(){if(infoWindow) {infoWindow.close();}})
         }
     });
 }
 
-function addMarker() {
+function addMarker(FBID) {
     console.log("Event ID: " + mapData[iterator]._id);
-    var infoWindowString = contentString1 + mapData[iterator]._id + contentString2;
+    var infoWindowString = 
+	'<div id = "infoWindow"> <form method="post" class="submit_form">' +
+ 	'<input type="hidden" name="FacebookID" value="' + FBID + '">' + 
+        '<input type="hidden" name = "eventID" value="' + mapData[iterator]._id + '">' + 
+        '<a onclick="submitForm()">Share playlist with ' + mapData[iterator].EventName + '</a></form></div>';
     console.log("InfoWindow: " + infoWindowString);
 
+    console.log(nearbyLocations[iterator]);
+    markerBounds.extend(nearbyLocations[iterator]);
     var marker = new google.maps.Marker({
         position: nearbyLocations[iterator],
         map: map,
@@ -429,13 +461,14 @@ function addMarker() {
         title: mapData[iterator].EventName + mapData[iterator].EventDesc + mapData[iterator].EventVenue
     });
 
-    marker.info = new google.maps.InfoWindow({
-        content: infoWindowString
-    });
-
     google.maps.event.addListener(marker, 'click', function() {
-        map.setCenter(marker.getPosition());
-        marker.info.open(map, marker);
+	if(infoWindow) {
+		infoWindow.close();
+	}
+	infoWindow = new google.maps.InfoWindow({
+        	content: infoWindowString
+    	});
+	infoWindow.open(map, marker);
     });
 
     eventMarkers.push(marker);
@@ -443,21 +476,18 @@ function addMarker() {
     iterator++;
 }
 
-google.maps.event.addDomListener(window, 'load', initialize);
 
 </script>
 
 <script>
 
-    //When DOM loaded we attach click event to button
-    $(document).ready(function () {
-        drop();
-    });
 </script>
 
 </head>
 <body>
 
+<div id="notif" class='notification' style='display:none'><p>Playlist Shared</p></div>
+<div id="error" class='notification' style='display:none'><p>Error Sharing Playlist</p></div>
 <div id="preloader">
     <div id="status">
         <p class="center-text">
@@ -468,76 +498,6 @@ google.maps.event.addDomListener(window, 'load', initialize);
 </div>
 
 <div id="fb-root"></div>
-<script>
-    window.fbAsyncInit = function () {
-        FB.init({
-            appId: '646533915411234',
-            status: true, // check login status
-            cookie: true, // enable cookies to allow the server to access the session
-            xfbml: true  // parse XFBML
-        });
-
-
-        // Here we subscribe to the auth.authResponseChange JavaScript event. This event is fired
-        // for any authentication related change, such as login, logout or session refresh. This means that
-        // whenever someone who was previously logged out tries to log in again, the correct case below
-        // will be handled.
-        FB.Event.subscribe('auth.authResponseChange', function (response) {
-            // Here we specify what we do with the response anytime this event occurs.
-            if (response.status === 'connected') {
-                // The response object is returned with a status field that lets the app know the current
-                // login status of the person. In this case, we're handling the situation where they
-                // have logged in to the app.
-                testAPI();
-            } else if (response.status === 'not_authorized') {
-                // In this case, the person is logged into Facebook, but not into the app, so we call
-                // FB.login() to prompt them to do so.
-                // In real-life usage, you wouldn't want to immediately prompt someone to login
-                // like this, for two reasons:
-                // (1) JavaScript created popup windows are blocked by most browsers unless they
-                // result from direct interaction from people using the app (such as a mouse click)
-                // (2) it is a bad experience to be continually prompted to login upon page load.
-                redirectToHomePage();
-//                FB.login();
-            } else {
-                // In this case, the person is not logged into Facebook, so we call the login()
-                // function to prompt them to do so. Note that at this stage there is no indication
-                // of whether they are logged into the app. If they aren't then they'll see the Login
-                // dialog right after they log in to Facebook.
-                // The same caveats as above apply to the FB.login() call here.
-                redirectToHomePage();
-//                FB.login();
-            }
-        });
-    };
-
-    // Load the SDK asynchronously
-    (function (d) {
-        var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
-        if (d.getElementById(id)) {
-            return;
-        }
-        js = d.createElement('script');
-        js.id = id;
-        js.async = true;
-        js.src = "//connect.facebook.net/en_US/all.js";
-        ref.parentNode.insertBefore(js, ref);
-    }(document));
-
-    // Here we run a very simple test of the Graph API after login is successful.
-    // This testAPI() function is only called in those cases.
-    function testAPI() {
-        console.log('Welcome!  Fetching your information.... ');
-        FB.api('/me', function (response) {
-            console.log('Good to see you, ' + response.name + '.');
-        });
-    }
-
-    function redirectToHomePage() {
-        window.location.assign("index.html")
-    }
-</script>
-
 <div class="header">
     <a href="#" class="show-navigation"></a>
     <a href="#" class="hide-navigation"></a>
@@ -547,25 +507,15 @@ google.maps.event.addDomListener(window, 'load', initialize);
 <div class="navigation">
     <div class="navigation-wrapper">
         <div class="nav-item">
-            <a href="index.html" class="homepage-icon">Homepage<em class="unselected-item"></em></a>
-        </div>
-        <div class="nav-item">
             <a href="nearby.html" class="nearby-icon">Nearby<em class="selected-item"></em></a>
         </div>
         <div class="nav-item">
-            <a href="viewRecommendedPlaylist.html" class="playlist-icon">Playlist<em class="unselected-item"></em></a>
-        </div>
-        <div class="nav-item">
-            <a href="#" class="submenu-item events-icon">EVENTS<em class="dropdown-item"></em></a>
+            <a href="#" class="submenu-item events-icon">Your EVENTS<em class="dropdown-item"></em></a>
 
             <div class="submenu">
                 <a href="addevents.html">Add Events <em class="unselected-item"></em></a>
                 <a href="viewevents.html">View Events <em class="unselected-item"></em></a>
-                <a href="#">Delete Events <em class="unselected-item"></em></a>
             </div>
-        </div>
-        <div class="nav-item">
-            <a href="#" class="profile-icon">My Profile <em class="unselected-item"></em></a>
         </div>
     </div>
 </div>
@@ -578,18 +528,9 @@ google.maps.event.addDomListener(window, 'load', initialize);
 
 <div id="event-list-div">
 
-    <ol class="rectangle-list" id="event-list">
-    </ol>
+    <ul style="list-style:none" class="rectangle-list" id="event-list">
+    </ul>
 </div>
-
-<div id = "infoWindow">
-    <form action="<rest URL>" method="post">
-        <input type="hidden" name = "FacebookID" value="100000492412441">
-        <input type="hidden" name = "EventID" value="">
-        <input type="submit" value="Share Playlist" class="sp-button">
-    </form>
-</div>
-
 <div class="content">
     <div class="decoration"></div>
     <div id="facebook-center" class="container">
